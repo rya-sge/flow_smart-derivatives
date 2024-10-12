@@ -12,7 +12,7 @@ module flow::derivative {
 	}
 
 	public fun init_call(ctx: &mut TxContext, receiver: address, quantity: u64,	unit_price: u64, expiration_date: u64, premium: u64): Option {
-		let contract = Option {
+		Option {
 			id: object::new(ctx),
 			seller: ctx.sender(),
 			buyer: receiver,
@@ -20,9 +20,7 @@ module flow::derivative {
 			unit_price: unit_price,
 			expiration_date: expiration_date,
 			premium: premium
-		};
-
-		return contract
+		}
 	}
 
 }
