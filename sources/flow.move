@@ -54,14 +54,15 @@ module flow::example {
     }
     
 	// TODO implement payment
-	public fun exerciseOption<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, coin: Coin<OFFERED_TOKEN>, clock: &Clock, ctx: &mut TxContext) {
+	public fun exerciseOption<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, coin: Coin<OFFERED_TOKEN>, clock: &Clock, ctx: &mut TxContext): Coin<OFFERED_TOKEN> {
 			assert!(tradeInfo.buyer == ctx.sender(), EMismatchedSenderRecipient);
 
 			let timestamp = clock.timestamp_ms();
 			assert!(timestamp >= tradeInfo.startDate && timestamp <= tradeInfo.endDate, EMismatchedSenderRecipient);
 
-			let offered_token_value = tradeInfo.underlying.value();
-			let offered_token = tradeInfo.underlying.split(offered_token_value);
-			transfer::public_transfer(coin::from_balance<OFFERED_TOKEN>(offered_token, ctx), tradeInfo.buyer);
+			// Void the token inside the tradeInfo
+			let delivery_balance = tradeInfo.underlying.split(tradeInfo.underlying.value());
+			
+			return coin::from_balance<OFFERED_TOKEN>(delivery_balance, ctx)
 	}
 }
