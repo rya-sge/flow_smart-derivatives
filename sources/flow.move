@@ -22,7 +22,12 @@ module flow::flow {
 		accepted: bool
 	}
 
-	public fun changeOwnership<OFFERED_TOKEN>(contract: &mut TradeInfo<OFFERED_TOKEN>, newBuyer: address, clock: &Clock, ctx: &mut TxContext){
+	public fun changeOwnership<OFFERED_TOKEN>(
+			contract: &mut TradeInfo<OFFERED_TOKEN>, 
+			newBuyer: address, 
+			clock: &Clock, 
+			ctx: &mut TxContext) {
+
 		assert!(ctx.sender() == contract.buyer, EMismatchedSenderRecipient);
 		assert!(contract.buyer != newBuyer, 0);
 		assert!(contract.seller != newBuyer, 0);
@@ -31,8 +36,16 @@ module flow::flow {
 		contract.buyer = newBuyer;
 	}
 
-	public fun createTrade<OFFERED_TOKEN:key+store>(buyer: address, 
-	start_date:u64, end_date: u64, premium:u64, underlying: Coin<OFFERED_TOKEN>, totalPrice: u64, is_forward: bool, ctx: &mut TxContext) {
+	public fun create_trade<OFFERED_TOKEN:key+store>(
+			buyer: address, 
+			start_date:u64, 
+			end_date: u64, 
+			premium:u64, 
+			underlying: Coin<OFFERED_TOKEN>, 
+			price: u64, 
+			is_forward: bool, 
+			ctx: &mut TxContext) {
+
 		let id = object::new(ctx);
 		let sender = ctx.sender();
 		
@@ -42,15 +55,19 @@ module flow::flow {
 			buyer: buyer,
 			end_date: end_date,
 			start_date:  start_date,
-			premium:premium,
+			premium: premium,
 			is_forward: is_forward,
 			underlying: underlying.into_balance(),
-			price: totalPrice,
+			price: price,
 			accepted: false
 		});
 	}
 
-	public fun accept_trade<OFFERED_TOKEN:key+store>(contract: &mut TradeInfo<OFFERED_TOKEN>, sui: &mut Coin<SUI>, ctx: &mut TxContext){
+	public fun accept_trade<OFFERED_TOKEN:key+store>(
+			contract: &mut TradeInfo<OFFERED_TOKEN>, 
+			sui: &mut Coin<SUI>, 
+			ctx: &mut TxContext) {
+
 		let sender = ctx.sender();
 		assert!(contract.buyer == sender, EMismatchedSenderRecipient);
 
@@ -58,7 +75,12 @@ module flow::flow {
 		pay::split_and_transfer(sui, contract.premium, contract.seller, ctx);
 	}
 
-	public fun retrieve_underlying<OFFERED_TOKEN:key+store>(contract: &mut TradeInfo<OFFERED_TOKEN>, coin: &mut Coin<OFFERED_TOKEN>, clock: &Clock, ctx: &mut TxContext): Coin<OFFERED_TOKEN> {
+	public fun retrieve_underlying<OFFERED_TOKEN:key+store>(
+			contract: &mut TradeInfo<OFFERED_TOKEN>, 
+			coin: &mut Coin<OFFERED_TOKEN>, 
+			clock: &Clock, 
+			ctx: &mut TxContext): Coin<OFFERED_TOKEN> {
+				
 		let timestamp = clock.timestamp_ms();
 		let contract_expired: bool = timestamp >= contract.start_date && timestamp <= contract.end_date;
 
