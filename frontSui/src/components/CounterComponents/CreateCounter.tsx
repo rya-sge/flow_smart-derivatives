@@ -95,15 +95,17 @@ export function CreateCounter({}: { onCreated: (id: string) => void }) {
         <div className="mb-4">
           <label>Effective Date :</label>
           <input
-            type="date"
+            type="text"
             className="input input-primary w-full mb-2"
+            placeholder="Enter effective date"
             value={effectiveDate}
             onChange={(e) => setEffectiveDate(e.target.value)}
           />
           <label>Due Date :</label>
           <input
-            type="date"
+            type="text"
             className="input input-primary w-full mb-2"
+            placeholder="Enter due date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
@@ -113,8 +115,9 @@ export function CreateCounter({}: { onCreated: (id: string) => void }) {
             <div className="mb-4">
               <label>Payment Date:</label>
               <input
-                type="date"
+                type="text"
                 className="input input-primary w-full"
+                placeholder="Enter payment date"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
               />
@@ -128,15 +131,17 @@ export function CreateCounter({}: { onCreated: (id: string) => void }) {
         <div className="mb-4">
           <label>Effective Date:</label>
           <input
-            type="date"
+            type="text"
             className="input input-primary w-full mb-2"
+            placeholder="Enter effective date"
             value={effectiveDate}
             onChange={(e) => setEffectiveDate(e.target.value)}
           />
           <label>Due Date</label>
           <input
-            type="date"
+            type="text"
             className="input input-primary w-full"
+            placeholder="Enter due date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
