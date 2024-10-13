@@ -2,16 +2,17 @@ import { useState } from "react";
 
 export function CreateCounter({}: { onCreated: (id: string) => void }) {
   const [buyerName, setBuyerName] = useState("");
-  const [type, setType] = useState(""); // To track Forward or Option selection
+  const [type, setType] = useState(""); // To track Forward, Option, or Pull Option selection
   const [effectiveDate, setEffectiveDate] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [paymentDate, setPaymentDate] = useState(""); // Optional for Forward
   const [asset, setAsset] = useState("");
   const [exchangePrice, setExchangePrice] = useState("");
   const [premiumIdentifiant, setPremiumIdentifiant] = useState("");
   const [premiumAmount, setPremiumAmount] = useState("");
+  const [paymentDate, setPaymentDate] = useState(""); // Payment date field
   const [error, setError] = useState(""); // To track validation errors
 
+  const [forwardBoolean, setForwardBoolean] = useState(false);
   const [showPaymentDate, setShowPaymentDate] = useState(false);
 
   const handleSubmit = () => {
@@ -23,13 +24,14 @@ export function CreateCounter({}: { onCreated: (id: string) => void }) {
       !asset ||
       !exchangePrice ||
       !premiumIdentifiant ||
-      !premiumAmount
+      !premiumAmount ||
+      (forwardBoolean && !paymentDate) // Payment date is mandatory for "Forward"
     ) {
       setError("Please fill in all required fields.");
       return;
     }
 
-    if (type === "Forward" && !effectiveDate && !dueDate) {
+    if (type === "Forward" && (!effectiveDate || !dueDate)) {
       setError("Please provide both effective and due dates for Forward type.");
       return;
     }
@@ -41,7 +43,7 @@ export function CreateCounter({}: { onCreated: (id: string) => void }) {
     <div className="max-w-md mx-auto p-4 mt-20">
       {/* Buyer Info */}
       <div className="mb-4">
-        <label>Who is the Buyer:</label>
+        <label>Buyer’s account</label>
         <input
           type="text"
           className="input input-primary w-full mb-2"
@@ -60,6 +62,7 @@ export function CreateCounter({}: { onCreated: (id: string) => void }) {
             onClick={() => {
               setType("Forward");
               setShowPaymentDate(true);
+              setForwardBoolean(true); // Set forwardBoolean to true when Forward is selected
             }}
           >
             Forward
@@ -69,54 +72,68 @@ export function CreateCounter({}: { onCreated: (id: string) => void }) {
             onClick={() => {
               setType("Option");
               setShowPaymentDate(false);
+              setForwardBoolean(false); // Set forwardBoolean to false when Option is selected
             }}
           >
-            Option
+            Call Option
+          </button>
+          <button
+            className={`btn ${type === "Pull Option" ? "btn-primary" : "btn-secondary"}`}
+            onClick={() => {
+              setType("Pull Option");
+              setShowPaymentDate(false);
+              setForwardBoolean(false); // Set forwardBoolean to false when Pull Option is selected
+            }}
+          >
+            Pull Option
           </button>
         </div>
       </div>
 
-      {/* Conditionally show fields for Forward or Option */}
-      {type === "Forward" && (
+      {/* Conditionally show fields for Forward */}
+      {forwardBoolean && (
         <div className="mb-4">
-          <label>Effective Date (Forward):</label>
+          <label>Effective Date :</label>
           <input
             type="date"
             className="input input-primary w-full mb-2"
             value={effectiveDate}
             onChange={(e) => setEffectiveDate(e.target.value)}
           />
-          <label>Due Date (Forward):</label>
+          <label>Due Date :</label>
           <input
             type="date"
             className="input input-primary w-full mb-2"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
+
+          {/* Payment Date Section */}
           {showPaymentDate && (
-            <>
-              <label>Payment Date (Optional):</label>
+            <div className="mb-4">
+              <label>Payment Date:</label>
               <input
                 type="date"
-                className="input input-primary w-full mb-2"
+                className="input input-primary w-full"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
               />
-            </>
+            </div>
           )}
         </div>
       )}
 
-      {type === "Option" && (
+      {/* Conditionally show fields for Option or Pull Option */}
+      {!forwardBoolean && (type === "Option" || type === "Pull Option") && (
         <div className="mb-4">
-          <label>Effective Date (Option):</label>
+          <label>Effective Date:</label>
           <input
             type="date"
             className="input input-primary w-full mb-2"
             value={effectiveDate}
             onChange={(e) => setEffectiveDate(e.target.value)}
           />
-          <label>Due Date (Option):</label>
+          <label>Due Date</label>
           <input
             type="date"
             className="input input-primary w-full"
@@ -140,13 +157,20 @@ export function CreateCounter({}: { onCreated: (id: string) => void }) {
 
       {/* Asset Future Exchange Price */}
       <div className="mb-4">
-        <label>Asset Future Exchange Price:</label>
+        <label>Asset Price:</label>
         <input
           type="text"
           className="input input-primary w-full"
-          placeholder="Set the future price"
+          placeholder="Set the price"
           value={exchangePrice}
           onChange={(e) => setExchangePrice(e.target.value)}
+        />
+        <input
+          type="text"
+          className="input input-primary w-full"
+          placeholder="Amount"
+          value={premiumAmount}
+          onChange={(e) => setPremiumAmount(e.target.value)}
         />
       </div>
 
@@ -156,16 +180,9 @@ export function CreateCounter({}: { onCreated: (id: string) => void }) {
         <input
           type="text"
           className="input input-primary w-full mb-2"
-          placeholder="Identifiant"
+          placeholder="Price"
           value={premiumIdentifiant}
           onChange={(e) => setPremiumIdentifiant(e.target.value)}
-        />
-        <input
-          type="text"
-          className="input input-primary w-full"
-          placeholder="Amount"
-          value={premiumAmount}
-          onChange={(e) => setPremiumAmount(e.target.value)}
         />
       </div>
 
