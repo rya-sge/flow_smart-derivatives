@@ -2,8 +2,7 @@ module flow::example {
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
     use sui::pay;
-    use sui::clock::{Self, Clock};
-    use std::string::{Self, String};
+    use sui::clock::Clock;
     use sui::balance::{Self, Balance};
 
     const EMismatchedSenderRecipient: u64 = 0;
