@@ -20,6 +20,17 @@ module flow::example {
 		startDate: u64
 	}
 
+
+	public fun changeOwnership<OFFERED_TOKEN>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, newBuyer: address, clock: &Clock, ctx: &mut TxContext){
+		assert!(ctx.sender() == tradeInfo.buyer, EMismatchedSenderRecipient);
+		assert!(tradeInfo.buyer != newBuyer, 0);
+		assert!(tradeInfo.seller != newBuyer, 0);
+		assert!(tradeInfo.endDate > clock.timestamp_ms(), 0);
+		assert! (tradeInfo.startDate < clock.timestamp_ms(), 0);
+		tradeInfo.buyer = newBuyer;
+	}
+
+
     public fun createTrade<OFFERED_TOKEN:key+store>(buyer: address, 
     startDate:u64, endDate: u64, premiumSui:u64, underlying: Coin<OFFERED_TOKEN>, totalPrice: u64, ctx: &mut TxContext) {
 		let id = object::new(ctx);
