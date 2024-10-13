@@ -7,13 +7,15 @@ module flow::example {
 
 	const EMismatchedSenderRecipient: u64 = 0;
 
+	const DAY_MS: u64 = 86_400_000;
+
 	public struct TradeInfo<phantom T> has key, store{
 		id: UID,
 		seller: address,
 		buyer: address,
 		underlying: Balance<T>,
 		optionsPrice: u64,
-		contractType: u8,
+		is_forward: bool,
 		premiumSui: u64,
 		endDate: u64,
 		startDate: u64,
@@ -30,7 +32,7 @@ module flow::example {
 	}
 
 	public fun createTrade<OFFERED_TOKEN:key+store>(buyer: address, 
-	startDate:u64, endDate: u64, premiumSui:u64, contractType: u8, underlying: Coin<OFFERED_TOKEN>, totalPrice: u64, ctx: &mut TxContext) {
+	startDate:u64, endDate: u64, premiumSui:u64, underlying: Coin<OFFERED_TOKEN>, totalPrice: u64, is_forward: bool, ctx: &mut TxContext) {
 		let id = object::new(ctx);
 		let sender = ctx.sender();
 
@@ -41,8 +43,8 @@ module flow::example {
 			endDate: endDate,
 			startDate:  startDate,
 			premiumSui:premiumSui,
+			is_forward: is_forward,
 			underlying: underlying.into_balance(),
-			contractType: contractType,
 			optionsPrice: totalPrice,
 			accepted: false
 		};
@@ -68,6 +70,9 @@ module flow::example {
 		} else {
 			assert!(contract.accepted);
 			assert!(!contract_expired);
+			if (contract.is_forward) {
+				assert!(timestamp >= contract.endDate - DAY_MS);
+			};
 
 			pay::split_and_transfer(coin, contract.optionsPrice, contract.seller, ctx);
 		};
