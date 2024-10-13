@@ -7,7 +7,7 @@ module flow::example {
     // use
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
-     use sui::pay;
+    use sui::pay;
     use sui::clock::{Self, Clock};
     use std::string::{Self, String};
     use sui::balance::{Self, Balance};
@@ -26,7 +26,6 @@ module flow::example {
 // use sui::transfer;
 // use sui::tx_context::{Self, TxContext};
 
-
 // Part 3: Module initializer to be executed when this module is published
 
 
@@ -40,18 +39,20 @@ public struct CoinPayment{
 // Key which indicates that these structs are Sui objects that you can transfer between addresses. 
 // The `store` ability on the structs provides the ability to appear in other struct fields and be transferred freely.
 //#[allow(lint(coin_field))]
+
 public struct TradeInfo<T> has key, store{
     id: UID,
     seller: address,
     buyer: address,
     underlying: Balance<T>,//   coinPayment: CoinPayment, 
+	optionsPrice: u64,
     premiumSui:u64,
     endDate: u64,
     startDate: u64
 }
 
     public fun createTrade<OFFERED_TOKEN:key+store>(buyer: address, 
-    startDate:u64, endDate: u64, premiumSui:u64,underlying: &mut Coin<OFFERED_TOKEN>,  offered_amount: u64,ctx: &mut TxContext) {
+    startDate:u64, endDate: u64, premiumSui:u64,underlying: &mut Coin<OFFERED_TOKEN>,  offered_amount: u64, totalPrice: u64, ctx: &mut TxContext) {
             let sender = tx_context::sender(ctx);
             // Create a trade
             let id = object::new(ctx);
@@ -65,7 +66,8 @@ public struct TradeInfo<T> has key, store{
                 startDate:  startDate,
                 premiumSui:premiumSui,
                 //SOus jacent
-                underlying:coin::into_balance<OFFERED_TOKEN>(offered_token)
+                underlying:coin::into_balance<OFFERED_TOKEN>(offered_token),
+				optionsPrice: totalPrice
             };
             // DTOkenTransfer?
             transfer::share_object(
@@ -85,17 +87,20 @@ public struct TradeInfo<T> has key, store{
             pay::split_and_transfer(sui, tradeInfo.premiumSui, tradeInfo.seller, ctx);
     }
     
-    public fun settleTrade<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, coin: &mut Coin<OFFERED_TOKEN>, ctx: &mut TxContext) {
-            let sender = tx_context::sender(ctx);
-            // Create a trade
-           // transfer::public_transfer(tradeInfo, sender);
-            //pay::split_and_transfer(sui, tradeInfo.premiumSui, tradeInfo.seller, ctx);
-            let offered_token_value = balance::value<OFFERED_TOKEN>(&tradeInfo.underlying);
-            let offered_token = balance::split<OFFERED_TOKEN>(&mut tradeInfo.underlying, offered_token_value);
-            transfer::public_transfer(coin::from_balance<OFFERED_TOKEN>(offered_token, ctx), sender);
-        }
-            // return tradeInfo;
-    }
+	public fun exerciseOption<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, coin: &mut Coin<OFFERED_TOKEN>, clock: &Clock, ctx: &mut TxContext) {
+			assert!(tradeInfo.buyer == tx_context::sender(ctx), EMismatchedSenderRecipient);
+
+			let timestamp = clock.timestamp_ms();
+			assert!(timestamp >= tradeInfo.startDate && timestamp <= tradeInfo.endDate, EMismatchedSenderRecipient);
+
+			// Create a trade
+			//transfer::public_transfer(tradeInfo, sender);
+			//pay::split_and_transfer(sui, tradeInfo.premiumSui, tradeInfo.seller, ctx);
+			let offered_token_value = balance::value<OFFERED_TOKEN>(&tradeInfo.underlying);
+			let offered_token = balance::split<OFFERED_TOKEN>(&mut tradeInfo.underlying, offered_token_value);
+			transfer::public_transfer(coin::from_balance<OFFERED_TOKEN>(offered_token, ctx), tradeInfo.buyer);
+	}
+}
 
 
     
