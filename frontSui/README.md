@@ -1,9 +1,3 @@
-# Sui x BSA 2024 dApp Starter Template
-
-Welcome to the [BSA](https://bsaepfl.ch/) x [SUI](https://sui.io/) Hackathon Official Starter Pack ! This kit should provide you with tons of tools to make your hackathon experience seamless and easy, so ou can focus on what you do best ! 
-
-This starter pack was made by BSA comitee member [Loris](https://github.com/Loris-EPFL), feel free to contact me for any questions, bug reports, etc...
-
 This dApp was created using `@mysten/create-dapp` that sets up a basic React
 Client dApp using the following tools:
 
@@ -17,7 +11,10 @@ Client dApp using the following tools:
   wallets and loading data
 - [pnpm](https://pnpm.io/) for package management
 
-IMPORTANT ! : To select your desired network for the dapp, create a .env file at the root of the project, add either VITE_NETWORK="testnet" for testnet or VITE_NETWORK="mainnet" for mainnet. Dapp default to testnet if no .env file is provided.
+IMPORTANT ! : To select your desired network for the dapp, create a .env file at
+the root of the project, add either VITE_NETWORK="testnet" for testnet or
+VITE_NETWORK="mainnet" for mainnet. Dapp default to testnet if no .env file is
+provided.
 
 For a full guide on how to build this dApp from scratch, visit this
 [guide](http://docs.sui.io/guides/developer/app-examples/e2e-counter#frontend).
