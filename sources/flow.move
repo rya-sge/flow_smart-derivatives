@@ -7,9 +7,7 @@ module flow::example {
     use sui::balance::{Self, Balance};
 
     const EMismatchedSenderRecipient: u64 = 0;
-  
-	const TRADE_STATUS_INITIATRED: u64 = 0;
-	const TRADE_STATUS_CREATED: u64 = 1;
+	const EOptionTimeout: u64 = 1;
 
 	public struct TradeInfo<phantom T> has key, store{
 		id: UID,
@@ -49,10 +47,10 @@ module flow::example {
     }
     
 	public fun exerciseOption<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, coin: &mut Coin<SUI>, clock: &Clock, ctx: &mut TxContext): Coin<OFFERED_TOKEN> {
-		assert!(tradeInfo.buyer == ctx.sender(), EMismatchedSenderRecipient);
-
 		let timestamp = clock.timestamp_ms();
-		assert!(timestamp >= tradeInfo.startDate && timestamp <= tradeInfo.endDate, 0);
+
+		assert!(tradeInfo.buyer == ctx.sender(), EMismatchedSenderRecipient);
+		assert!(timestamp >= tradeInfo.startDate && timestamp <= tradeInfo.endDate, EOptionTimeout);
 
 		pay::split_and_transfer(coin, tradeInfo.optionsPrice, tradeInfo.seller, ctx);
 		
@@ -64,10 +62,10 @@ module flow::example {
 	}
 
 	public fun retrieveUnderlying<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, coin: &mut Coin<OFFERED_TOKEN>, clock: &Clock, ctx: &mut TxContext) {
-        assert!(tradeInfo.seller == tx_context::sender(ctx), EMismatchedSenderRecipient);
         let timestamp = clock.timestamp_ms();
-        assert!(timestamp > tradeInfo.endDate, 0);
-        assert!(timestamp >= tradeInfo.startDate && timestamp <= tradeInfo.endDate, 0);
+		
+		assert!(tradeInfo.seller == ctx.sender(), EMismatchedSenderRecipient);
+        assert!(timestamp >= tradeInfo.startDate && timestamp <= tradeInfo.endDate, EOptionTimeout);
 
             // Create a trade
             //transfer::public_transfer(tradeInfo, sender);
