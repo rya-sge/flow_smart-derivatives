@@ -1,4 +1,4 @@
-module flow::example {
+module counter::example {
 	use sui::coin::{Self, Coin};
 	use sui::sui::SUI;
 	use sui::pay;

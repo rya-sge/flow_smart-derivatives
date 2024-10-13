@@ -45,7 +45,7 @@ export function CreateCounter({}: { onCreated: (id: string) => void }) {
         <input
           type="text"
           className="input input-primary w-full mb-2"
-          placeholder="Buyer’s Name"
+          placeholder="Buyer’s Address"
           value={buyerName}
           onChange={(e) => setBuyerName(e.target.value)}
         />
