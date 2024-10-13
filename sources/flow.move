@@ -30,7 +30,7 @@ module flow::example {
     public fun createTrade<OFFERED_TOKEN:key+store>(buyer: address, 
     startDate:u64, endDate: u64, premiumSui:u64, underlying: Coin<OFFERED_TOKEN>, totalPrice: u64, ctx: &mut TxContext) {
 		let id = object::new(ctx);
-		let sender = tx_context::sender(ctx);
+		let sender = ctx.sender();
 
 		let tradeInfo = TradeInfo<OFFERED_TOKEN> {
 			id: id,
@@ -47,21 +47,21 @@ module flow::example {
     }
 
     public fun acceptTrade<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, sui: &mut Coin<SUI>, ctx: &mut TxContext){
-            let sender = tx_context::sender(ctx);
+            let sender = ctx.sender();
             assert!(tradeInfo.buyer == sender, EMismatchedSenderRecipient);
 			
             pay::split_and_transfer(sui, tradeInfo.premiumSui, tradeInfo.seller, ctx);
     }
     
 	// TODO implement payment
-	public fun exerciseOption<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, coin: &mut Coin<OFFERED_TOKEN>, clock: &Clock, ctx: &mut TxContext) {
-			assert!(tradeInfo.buyer == tx_context::sender(ctx), EMismatchedSenderRecipient);
+	public fun exerciseOption<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, coin: Coin<OFFERED_TOKEN>, clock: &Clock, ctx: &mut TxContext) {
+			assert!(tradeInfo.buyer == ctx.sender(), EMismatchedSenderRecipient);
 
 			let timestamp = clock.timestamp_ms();
 			assert!(timestamp >= tradeInfo.startDate && timestamp <= tradeInfo.endDate, EMismatchedSenderRecipient);
 
-			let offered_token_value = balance::value<OFFERED_TOKEN>(&tradeInfo.underlying);
-			let offered_token = balance::split<OFFERED_TOKEN>(&mut tradeInfo.underlying, offered_token_value);
+			let offered_token_value = tradeInfo.underlying.value();
+			let offered_token = tradeInfo.underlying.split(offered_token_value);
 			transfer::public_transfer(coin::from_balance<OFFERED_TOKEN>(offered_token, ctx), tradeInfo.buyer);
 	}
 }
