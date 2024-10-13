@@ -36,22 +36,19 @@ module flow::flow {
 		contract.buyer = newBuyer;
 	}
 
-	public fun create_trade<OFFERED_TOKEN:key+store>(
+	public fun create_trade<OFFERED_TOKEN>(
 			buyer: address, 
 			start_date:u64, 
 			end_date: u64, 
-			premium:u64, 
+			premium: u64, 
 			underlying: Coin<OFFERED_TOKEN>, 
 			price: u64, 
 			is_forward: bool, 
 			ctx: &mut TxContext) {
-
-		let id = object::new(ctx);
-		let sender = ctx.sender();
 		
 		transfer::share_object(TradeInfo<OFFERED_TOKEN> {
-			id: id,
-			seller: sender,
+			id: object::new(ctx),
+			seller: ctx.sender(),
 			buyer: buyer,
 			end_date: end_date,
 			start_date:  start_date,
@@ -63,7 +60,7 @@ module flow::flow {
 		});
 	}
 
-	public fun accept_trade<OFFERED_TOKEN:key+store>(
+	public fun accept_trade<OFFERED_TOKEN>(
 			contract: &mut TradeInfo<OFFERED_TOKEN>, 
 			sui: &mut Coin<SUI>, 
 			ctx: &mut TxContext) {
@@ -75,12 +72,12 @@ module flow::flow {
 		pay::split_and_transfer(sui, contract.premium, contract.seller, ctx);
 	}
 
-	public fun retrieve_underlying<OFFERED_TOKEN:key+store>(
+	public fun retrieve_underlying<OFFERED_TOKEN>(
 			contract: &mut TradeInfo<OFFERED_TOKEN>, 
 			coin: &mut Coin<OFFERED_TOKEN>, 
 			clock: &Clock, 
 			ctx: &mut TxContext): Coin<OFFERED_TOKEN> {
-				
+
 		let timestamp = clock.timestamp_ms();
 		let contract_expired: bool = timestamp >= contract.start_date && timestamp <= contract.end_date;
 
