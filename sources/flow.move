@@ -15,10 +15,10 @@ module flow::flow {
 		buyer: address,
 		underlying: Balance<T>,
 		price: u64,
-		is_forward: bool,
 		premium: u64,
+		is_forward: bool,
+		begin_date: u64,
 		end_date: u64,
-		start_date: u64,
 		accepted: bool
 	}
 
@@ -31,42 +31,49 @@ module flow::flow {
 		assert!(ctx.sender() == contract.buyer, EMismatchedSenderRecipient);
 		assert!(contract.buyer != newBuyer, 0);
 		assert!(contract.seller != newBuyer, 0);
-		assert!(contract.end_date > clock.timestamp_ms(), 0);
-		assert! (contract.start_date < clock.timestamp_ms(), 0);
+		assert!(!time_expired(contract.begin_date, contract.end_date, clock));
+		
 		contract.buyer = newBuyer;
 	}
 
 	public fun create_trade<OFFERED_TOKEN>(
 			buyer: address, 
-			start_date:u64, 
-			end_date: u64, 
-			premium: u64, 
 			underlying: Coin<OFFERED_TOKEN>, 
 			price: u64, 
-			is_forward: bool, 
+			premium: u64, 
+			is_forward: bool,
+			begin_date:u64, 
+			end_date: u64, 
+			clock: &Clock,
 			ctx: &mut TxContext) {
+
+		assert!(!time_expired(begin_date, end_date, clock));
+
 		
-		transfer::share_object(TradeInfo<OFFERED_TOKEN> {
+		let contract = TradeInfo<OFFERED_TOKEN> {
 			id: object::new(ctx),
 			seller: ctx.sender(),
 			buyer: buyer,
-			end_date: end_date,
-			start_date:  start_date,
-			premium: premium,
-			is_forward: is_forward,
 			underlying: underlying.into_balance(),
 			price: price,
+			premium: premium,
+			is_forward: is_forward,
+			begin_date:  begin_date,
+			end_date: end_date,
 			accepted: false
-		});
+		};
+
+		transfer::share_object(contract);
 	}
 
 	public fun accept_trade<OFFERED_TOKEN>(
 			contract: &mut TradeInfo<OFFERED_TOKEN>, 
-			sui: &mut Coin<SUI>, 
+			sui: &mut Coin<SUI>,
+			clock: &Clock,
 			ctx: &mut TxContext) {
 
-		let sender = ctx.sender();
-		assert!(contract.buyer == sender, EMismatchedSenderRecipient);
+		assert!(contract.buyer == ctx.sender(), EMismatchedSenderRecipient);
+		assert!(!time_expired(contract.begin_date,contract.end_date, clock));
 
 		contract.accepted = true;
 		pay::split_and_transfer(sui, contract.premium, contract.seller, ctx);
@@ -78,8 +85,7 @@ module flow::flow {
 			clock: &Clock, 
 			ctx: &mut TxContext): Coin<OFFERED_TOKEN> {
 
-		let timestamp = clock.timestamp_ms();
-		let contract_expired: bool = timestamp >= contract.start_date && timestamp <= contract.end_date;
+		let contract_expired: bool = time_expired(contract.begin_date, contract.end_date, clock);
 
 		if (ctx.sender() == contract.seller) {
 			assert!(!contract.accepted);
@@ -88,7 +94,7 @@ module flow::flow {
 			assert!(contract.accepted);
 			assert!(!contract_expired);
 			if (contract.is_forward) {
-				assert!(timestamp >= contract.end_date - DAY_MS);
+				assert!(!time_expired(contract.end_date - DAY_MS, contract.end_date, clock));
 			};
 
 			pay::split_and_transfer(coin, contract.price, contract.seller, ctx);
@@ -98,5 +104,11 @@ module flow::flow {
 		let balance = contract.underlying.split(value);
 
 		return coin::from_balance(balance, ctx)
+	}
+
+	fun time_expired(begin_date: u64, end_date: u64, clock: &Clock): bool {
+		let timestamp = clock.timestamp_ms();
+
+		return timestamp >= begin_date && timestamp <= end_date
 	}
 }
