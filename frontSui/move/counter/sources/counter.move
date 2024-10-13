@@ -1,36 +1,85 @@
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+module flow::example {
+	use sui::coin::{Self, Coin};
+	use sui::sui::SUI;
+	use sui::pay;
+	use sui::clock::Clock;
+	use sui::balance::Balance;
 
-/// This example demonstrates a basic use of a shared object.
-/// Rules:
-/// - anyone can create and share a counter
-/// - everyone can increment a counter by 1
-/// - the owner of the counter can reset it to any value
-module counter::counter {
-  /// A shared counter.
-  public struct Counter has key {
-    id: UID,
-    owner: address,
-    value: u64
-  }
+	const EMismatchedSenderRecipient: u64 = 0;
 
-  /// Create and share a Counter object.
-  public fun create(ctx: &mut TxContext) {
-    transfer::share_object(Counter {
-      id: object::new(ctx),
-      owner: ctx.sender(),
-      value: 0
-    })
-  }
+	const DAY_MS: u64 = 86_400_000;
 
-  /// Increment a counter by 1.
-  public fun increment(counter: &mut Counter) {
-    counter.value = counter.value + 1;
-  }
+	public struct TradeInfo<phantom T> has key, store{
+		id: UID,
+		seller: address,
+		buyer: address,
+		underlying: Balance<T>,
+		optionsPrice: u64,
+		is_forward: bool,
+		premiumSui: u64,
+		endDate: u64,
+		startDate: u64,
+		accepted: bool
+	}
 
-  /// Set value (only runnable by the Counter owner)
-  public fun set_value(counter: &mut Counter, value: u64, ctx: &TxContext) {
-    assert!(counter.owner == ctx.sender(), 0);
-    counter.value = value;
-  }
+	public fun changeOwnership<OFFERED_TOKEN>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, newBuyer: address, clock: &Clock, ctx: &mut TxContext){
+		assert!(ctx.sender() == tradeInfo.buyer, EMismatchedSenderRecipient);
+		assert!(tradeInfo.buyer != newBuyer, 0);
+		assert!(tradeInfo.seller != newBuyer, 0);
+		assert!(tradeInfo.endDate > clock.timestamp_ms(), 0);
+		assert! (tradeInfo.startDate < clock.timestamp_ms(), 0);
+		tradeInfo.buyer = newBuyer;
+	}
+
+	public fun createTrade<OFFERED_TOKEN:key+store>(buyer: address, 
+	startDate:u64, endDate: u64, premiumSui:u64, underlying: Coin<OFFERED_TOKEN>, totalPrice: u64, is_forward: bool, ctx: &mut TxContext) {
+		let id = object::new(ctx);
+		let sender = ctx.sender();
+
+		let tradeInfo = TradeInfo<OFFERED_TOKEN> {
+			id: id,
+			seller: sender,
+			buyer: buyer,
+			endDate: endDate,
+			startDate:  startDate,
+			premiumSui:premiumSui,
+			is_forward: is_forward,
+			underlying: underlying.into_balance(),
+			optionsPrice: totalPrice,
+			accepted: false
+		};
+		
+		transfer::share_object(tradeInfo);
+	}
+
+	public fun acceptTrade<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, sui: &mut Coin<SUI>, ctx: &mut TxContext){
+		let sender = ctx.sender();
+		assert!(tradeInfo.buyer == sender, EMismatchedSenderRecipient);
+
+		tradeInfo.accepted = true;
+		pay::split_and_transfer(sui, tradeInfo.premiumSui, tradeInfo.seller, ctx);
+	}
+
+	public fun retrieve_underlying_2<OFFERED_TOKEN:key+store>(contract: &mut TradeInfo<OFFERED_TOKEN>, coin: &mut Coin<OFFERED_TOKEN>, clock: &Clock, ctx: &mut TxContext): Coin<OFFERED_TOKEN> {
+		let timestamp = clock.timestamp_ms();
+		let contract_expired: bool = timestamp >= contract.startDate && timestamp <= contract.endDate;
+
+		if (ctx.sender() == contract.seller) {
+			assert!(!contract.accepted);
+			assert!(contract_expired);
+		} else {
+			assert!(contract.accepted);
+			assert!(!contract_expired);
+			if (contract.is_forward) {
+				assert!(timestamp >= contract.endDate - DAY_MS);
+			};
+
+			pay::split_and_transfer(coin, contract.optionsPrice, contract.seller, ctx);
+		};
+
+		let value = contract.underlying.value();
+		let balance = contract.underlying.split(value);
+
+		return coin::from_balance(balance, ctx)
+	}
 }
