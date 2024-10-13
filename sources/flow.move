@@ -8,17 +8,22 @@ module flow::example {
     const EMismatchedSenderRecipient: u64 = 0;
 	const EOptionTimeout: u64 = 1;
 
+	// mettre un type FORWARD, CALL-OPTION, PUT-OPTION
+	const FORWARD: u8 = 0;
+	const CALL_OPTION: u8 = 1;
+	const PUT_OPTION: u8 = 2;
+
 	public struct TradeInfo<phantom T> has key, store{
 		id: UID,
 		seller: address,
 		buyer: address,
 		underlying: Balance<T>,
 		optionsPrice: u64,
+		contractType: u8,
 		premiumSui: u64,
 		endDate: u64,
 		startDate: u64
 	}
-
 
 	public fun changeOwnership<OFFERED_TOKEN>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, newBuyer: address, clock: &Clock, ctx: &mut TxContext){
 		assert!(ctx.sender() == tradeInfo.buyer, EMismatchedSenderRecipient);
@@ -31,7 +36,7 @@ module flow::example {
 
 
     public fun createTrade<OFFERED_TOKEN:key+store>(buyer: address, 
-    startDate:u64, endDate: u64, premiumSui:u64, underlying: Coin<OFFERED_TOKEN>, totalPrice: u64, ctx: &mut TxContext) {
+    startDate:u64, endDate: u64, premiumSui:u64, contractType: u8, underlying: Coin<OFFERED_TOKEN>, totalPrice: u64, ctx: &mut TxContext) {
 		let id = object::new(ctx);
 		let sender = ctx.sender();
 
@@ -43,6 +48,7 @@ module flow::example {
 			startDate:  startDate,
 			premiumSui:premiumSui,
 			underlying: underlying.into_balance(),
+			contractType: contractType,
 			optionsPrice: totalPrice
 		};
 		
