@@ -11,11 +11,6 @@ module flow::example {
 	const TRADE_STATUS_INITIATRED: u64 = 0;
 	const TRADE_STATUS_CREATED: u64 = 1;
 
-	public struct CoinPayment{
-		coinPaymentId: u64,
-		premium: u64
-	}
-
 	public struct TradeInfo<phantom T> has key, store{
 		id: UID,
 		seller: address,
