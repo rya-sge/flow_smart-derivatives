@@ -32,7 +32,7 @@ module flow::flow {
 		assert!(contract.buyer != newBuyer, 0);
 		assert!(contract.seller != newBuyer, 0);
 		assert!(!time_expired(contract.begin_date, contract.end_date, clock));
-		
+
 		contract.buyer = newBuyer;
 	}
 
@@ -109,6 +109,6 @@ module flow::flow {
 	fun time_expired(begin_date: u64, end_date: u64, clock: &Clock): bool {
 		let timestamp = clock.timestamp_ms();
 
-		return timestamp >= begin_date && timestamp <= end_date
+		return timestamp < begin_date && timestamp > end_date
 	}
 }
