@@ -34,7 +34,6 @@ module flow::example {
 		tradeInfo.buyer = newBuyer;
 	}
 
-
     public fun createTrade<OFFERED_TOKEN:key+store>(buyer: address, 
     startDate:u64, endDate: u64, premiumSui:u64, contractType: u8, underlying: Coin<OFFERED_TOKEN>, totalPrice: u64, ctx: &mut TxContext) {
 		let id = object::new(ctx);
@@ -58,17 +57,28 @@ module flow::example {
     public fun acceptTrade<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, sui: &mut Coin<SUI>, ctx: &mut TxContext){
 		let sender = ctx.sender();
 		assert!(tradeInfo.buyer == sender, EMismatchedSenderRecipient);
-		
 		pay::split_and_transfer(sui, tradeInfo.premiumSui, tradeInfo.seller, ctx);
     }
     
 	public fun exerciseOption<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, coin: &mut Coin<SUI>, clock: &Clock, ctx: &mut TxContext): Coin<OFFERED_TOKEN> {
+		assert!(tradeInfo.contractType != FORWARD, 0);
 		let timestamp = clock.timestamp_ms();
-
 		assert!(tradeInfo.buyer == ctx.sender(), EMismatchedSenderRecipient);
 		assert!(timestamp >= tradeInfo.startDate && timestamp <= tradeInfo.endDate, EOptionTimeout);
 
-		pay::split_and_transfer(coin, tradeInfo.optionsPrice, tradeInfo.seller, ctx);
+		let currentSeller: address;
+
+		if(tradeInfo.contractType == CALL_OPTION){
+			currentSeller = tradeInfo.seller;
+		} else if (tradeInfo.contractType == PUT_OPTION){
+			currentSeller = tradeInfo.buyer;
+		} else {
+			currentSeller = tradeInfo.seller;
+		};
+
+		// Two cases: in the case of a call option, the issuer receives the funds
+		// In the case of a put option, the buyer receives the funds
+		pay::split_and_transfer(coin, tradeInfo.optionsPrice, currentSeller, ctx);
 		
 		// Void the token inside the tradeInfo
 		let value = tradeInfo.underlying.value();
@@ -78,9 +88,15 @@ module flow::example {
 	}
 
 	public fun retrieveUnderlying<OFFERED_TOKEN:key+store>(tradeInfo: &mut TradeInfo<OFFERED_TOKEN>, coin: &mut Coin<OFFERED_TOKEN>, clock: &Clock, ctx: &mut TxContext) {
-        let timestamp = clock.timestamp_ms();
-		
-		assert!(tradeInfo.seller == ctx.sender(), EMismatchedSenderRecipient);
+        if(tradeInfo.contractType == CALL_OPTION ){
+		    assert!(tradeInfo.buyer == ctx.sender(), EMismatchedSenderRecipient);
+		} else if(tradeInfo.contractType == PUT_OPTION){
+			assert!(tradeInfo.seller == ctx.sender(), EMismatchedSenderRecipient);
+		} else {
+			assert!(tradeInfo.buyer == ctx.sender(), EMismatchedSenderRecipient);
+		};
+
+		let timestamp = clock.timestamp_ms();
         assert!(timestamp >= tradeInfo.startDate && timestamp <= tradeInfo.endDate, EOptionTimeout);
 
             // Create a trade
@@ -88,6 +104,6 @@ module flow::example {
             //pay::split_and_transfer(sui, tradeInfo.premiumSui, tradeInfo.seller, ctx);
         let offered_token_value = balance::value<OFFERED_TOKEN>(&tradeInfo.underlying);
         let offered_token = balance::split<OFFERED_TOKEN>(&mut tradeInfo.underlying, offered_token_value);
-        transfer::public_transfer(coin::from_balance<OFFERED_TOKEN>(offered_token, ctx), tradeInfo.seller);
+        transfer::public_transfer(coin::from_balance<OFFERED_TOKEN>(offered_token, ctx), ctx.sender());
     }
 }
