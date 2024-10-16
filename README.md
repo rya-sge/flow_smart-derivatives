@@ -1,8 +1,9 @@
 # SUI BSA Hackaton
 
-> Project made during the 2024 SUI hackaton orginsed by the [BSA](https://bsaepfl.ch)
+> Project made during the 2024 SUI hackaton organized by the [BSA](https://bsaepfl.ch)
+> Team:  [Arthur Y.](https://www.linkedin.com/in/a-yukhanov/), [Clément S.](https://www.linkedin.com/in/clément-santacreu-4006612ab/), c, Cyril, [Ryan S.](https://www.linkedin.com/in/ryan-sauge/) and [Stan S.](https://www.linkedin.com/in/stan-stelcher/)
 
-When you want to perform an OTC trade, there is always a counterparty risk. 
+When you want to perform an **OTC** trade, there is always a counterparty risk. 
 
 What happen if one of the party does not fulfill its obligations ? 
 
@@ -12,9 +13,11 @@ These requirements increases the cost of transaction for OTC buyers and sellers.
 
 A blockchain-based application improves the OTC derivatives market by removing  the need to trust counterparties. 
 
-Smart contracts automate settlements, ensuring timely execution and reducing settlement risk. This application is focused on OTC for derivate product.
+Smart contracts automate settlements, ensuring timely execution and reducing settlement risk. 
 
-Main advantage:
+This application is focused on OTC for derivate product.
+
+## Main Advantage
 
 ![solution](./image/solution.png)
 
@@ -35,6 +38,59 @@ A put option gives you the right, but not the obligation, to sell an asset repre
 
 
 ![SmartContractDerivative-ShareObject.drawio](./image/SmartContractDerivative-ShareObject.drawio.webp)
+
+## Move concept
+
+- Design the SUI native token
+
+```
+Coin<SUI>
+```
+
+- `clock`
+
+Sui has built-in support for a clock. The clock is a special object that can be used to get the current time. It is a [shared object](https://examples.sui.io/basics/shared-object.html), and can be accessed by anyone.
+
+Clock has a reserved address `0x6`. While being a shared object, it can't be accessed mutably, and a transaction attempting to do so will fail.
+
+```
+clock: &Clock, 
+assert!(!time_expired(contract.begin_date, contract.end_date, clock));
+```
+
+Reference: [Sui examples - clock](https://examples.sui.io/basics/clock.html)
+
+- `split`
+
+A split is required to create a token object with the amount to transfer.
+
+For example, to create a SUI token worth .6 SUI, you have to split the token worth 1 SUI into two token objects worth .6 SUI and .4 SUI.
+
+```
+contract.underlying.split(value);
+```
+
+Doc: [SUI - SUI balance transfer ](https://docs.sui.io/guides/operator/exchange-integration#sui-balance-transfer)
+
+- `pay::split_and_transfer`
+
+This function will perform a split and a transfer.
+
+```rust
+pay::split_and_transfer(coin, contract.price, contract.seller, ctx);
+```
+
+Doc: [docs.sui.io - sui-framework/pay](https://docs.sui.io/references/framework/sui-framework/pay)
+
+`coin::from_balance`
+
+Wrap a balance into a Coin to make it transferable.
+
+```rust
+coin::from_balance(balance, ctx)
+```
+
+Reference: [Sui doc](https://docs.sui.io/references/framework/sui-framework/coin#0x2_coin_from_balance)
 
 ## Transaction
 
@@ -59,3 +115,9 @@ Made with the help of:
 - [github.com/Krut007 - Tricount](https://github.com/Krut007/tricount/blob/master/sources/tricount.move)
 - [github.com/0xresil - Escrow-Move](https://github.com/0xresil/Escrow-Move/blob/main/escrow_sui/sources/escrow.move)
 - [MystenLabs/sui - escrow/sources](https://github.com/MystenLabs/sui/tree/main/examples/trading/contracts/escrow/sources)
+
+## Other cool projects
+
+Many cool project have been build during this hackaton by other team. Here their repository:
+
+- [Gundondu0 - fair.fun](https://github.com/gundondu0/fair.fun)
